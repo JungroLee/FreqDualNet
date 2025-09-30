@@ -23,7 +23,8 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 # GPU 할당해주는 코드 교수님께서 알려주신거
 import datetime as dt
-save_dir = "/home/gail11/orgunetr/Kideny_Orgswinunetr/orgswinunetr_fft_3"
+save_dir = "./FreqDualNet"
+os.makedirs(save_dir, exist_ok=True)
 from monai.networks.nets import UNet
 from monai.networks.layers import Norm
 from monai.transforms import (
@@ -47,9 +48,7 @@ from typing import Optional
 from monai.metrics import MAEMetric
 
 from tqdm import tqdm
-# from tqdm.notebook import tqdm
 
-# from monai.networks.nets import SwinUNETR
 
 print(f'torch.cuda.is_available(): {torch.cuda.is_available()}')
 print(f'torch.cuda.get_device_name(0): {torch.cuda.get_device_name(0)}')
@@ -95,10 +94,8 @@ if not USE_MY_DATA:
     if not os.path.exists(data_dir):
         download_and_extract(resource, compressed_file, root_dir, md5)
 
-else:
-    #data_dir = '/home/gail1/workspace/Resized_Liver_Cancer_512_512_128/'
-    #data_dir = '/home/gail1/workspace/kits2023_256/'
-    # data_dir = r"/home/gail11/orgunetr/Dataset/KITS19_224"  
+else:  
+    #For Downloading Kidney Tumor Dataset, please visit "https://kits19.grand-challenge.org/"
     data_dir = r"/home/gail11/orgunetr/Dataset/KITS19_224"  
 train_images = sorted(
     glob.glob(os.path.join(data_dir, "normalized", "*.nii.gz")))
@@ -152,7 +149,7 @@ minmax = MinMax(keys=['image',])
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, Orientationd, Resized, NormalizeIntensityd, ToTensord, RandRotated
 from monai.transforms import RandFlipd, RandAffined, RandGaussianNoised, RandScaleIntensityd, RandShiftIntensityd
 
-# Compose 객체를 정의합니다.
+
 transforms = Compose([
     LoadImaged(keys=("image",'label'), image_only=False),
     EnsureChannelFirstd(keys=["image",'label']),
@@ -182,14 +179,6 @@ transforms_val = Compose([
 
 
 SampleSet = transforms(TestSet[:3])
-
-# for i in range(3):
-#     sample_img = SampleSet[i]['image']
-#     sample_mask = SampleSet[i]['label']
-#     print(f"[sample {i+1}]")
-#     print(sample_img.shape, sample_img.dtype, torch.min(sample_img), torch.max(sample_img))
-#     print(sample_mask.shape, sample_mask.dtype, torch.unique(sample_mask))
-
 
 
 for i in range(3):
@@ -294,15 +283,14 @@ from torch import Tensor
 
 print('done')
 
-##
-# from swin_unetr_mask import *
+
 
 import sys
 import os
-sys.path.append('/home/gail11/orgunetr')
-from swin_unetr_fft_3 import *
+from Freq_Net import *
 
-os.chdir(os.path.expanduser('/home/gail11/orgunetr/Kideny_Orgswinunetr/orgswinunetr_fft_3'))
+
+
 from monai.losses import DiceCELoss, DiceLoss
 from monai.losses.dice import one_hot
 
@@ -354,8 +342,7 @@ LossFunction = monai.losses.DiceCELoss(include_background=False, to_onehot_y=Fal
 from monai.metrics import DiceMetric
 # from monai.utils import one_hot
 
-# 초기화
-MetricDice = DiceMetric(include_background=False, reduction="none")  # <-- 평균은 나중에 직접
+MetricDice = DiceMetric(include_background=False, reduction="none")
 
 def compute_valid_dice_with_monai(pred, target):
     """
@@ -368,14 +355,12 @@ def compute_valid_dice_with_monai(pred, target):
     MetricDice(pred, target)
     dice_per_channel = MetricDice.aggregate().detach()  # shape: (B, C)
 
-    # GT 기준으로 유효 클래스 마스크 구하기
     dims = tuple(range(2, target.ndim))  # (2,3) or (2,3,4)
     target_sum = target.sum(dim=dims)
     valid_mask = (target_sum > 0).float()  # shape: (B, C)
 
-    # Dice 계산 시 유효한 class만 남기기
     masked_dice = dice_per_channel * valid_mask
-    num_valid = valid_mask.sum(dim=1).clamp(min=1)  # 각 배치별 유효 클래스 수
+    num_valid = valid_mask.sum(dim=1).clamp(min=1)  
 
     mean_dice = (masked_dice.sum(dim=1) / num_valid).mean().item()
     return mean_dice
@@ -401,7 +386,7 @@ from torch.amp import GradScaler
 from torch.amp import autocast
 scaler = GradScaler('cuda')
 
-ACCUMULATION_STEPS = 4  # 원하는 값으로 조정
+ACCUMULATION_STEPS = 4  
 
 def train(epoch, train_loader):
     mean_epoch_loss = 0
@@ -423,14 +408,6 @@ def train(epoch, train_loader):
         print("y_organ.shape : ", y_organ.shape)
         y_organ = one_hot(y_organ, num_classes=NUM_CLASS_ONE_HOT)
         # print("y_organ.shape : ", y_organ[:,:,:,])
-#         print("y_organ.shape : ", y_organ.shape)
-#         print("organ 채널 값 (should be 1 where organ exists):", torch.unique(y_organ[:, 1, :, :, :]))
-#         print("background 채널 값:", torch.unique(y_organ[:, 0, :, :, :]))
-#         organ_mask = y_organ[:, 1, :, :, :]
-#         background_mask = y_organ[:, 0, :, :, :]
-
-# # 두 채널은 보완 관계여야 함 (같은 위치에서 동시에 1일 수 없음)
-#         print(torch.sum((organ_mask == 1) & (background_mask == 1)))  # 반드시 0이 나와야 정상
 
         y_organ = y_organ.to(DEVICE)
 
@@ -463,16 +440,14 @@ def train(epoch, train_loader):
 
         bi_organ = BinaryOutput(pred_organ)
         dice_score_organ = compute_valid_dice_with_monai(bi_organ, y_organ)
-        # MetricDice(bi_organ, y_organ)
-        # dice_score_organ = MetricDice.aggregate().item()
+       
         mean_dice_score_organ += dice_score_organ
 
         MetricDice.reset()
 
         bi_tumor = BinaryOutput(pred_tumor)
         dice_score_tumor = compute_valid_dice_with_monai(bi_tumor, y_tumor)
-        # MetricDice(bi_tumor, y_tumor)
-        # dice_score_tumor = MetricDice.aggregate().item()
+        
         mean_dice_score_tumor += dice_score_tumor
 
         MetricDice.reset()
@@ -574,7 +549,6 @@ dice_scores_tumor = {'train':[], 'val':[]}
 best_metric, best_epoch = -1, -1
 import os
 
-# os.chdir("/home/gail11/orgunetr/orgswinunetr_res")
 
 iter = 0
 
@@ -745,57 +719,6 @@ plt.subplots_adjust(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 plt.show()  
 plt.savefig('res_predictions_tumor_transformer_X_lr1e-3_kits_fft_3_test_0.1.png')
 
-# 결과 저장을 위한 디렉토리 생성
-save_dir = "/home/gail11/orgunetr/orgswinunetr_fft_3"
-# subdirs = ["metrics", "predictions", "plots"]
 
-# # 디렉토리 생성
-# for subdir in subdirs:
-#     os.makedirs(os.path.join(save_dir, subdir), exist_ok=True)
-# # 1. metrics 디렉토리에 손실값과 다이스 스코어 저장
-# metrics_path = os.path.join(save_dir, "metrics")
-# metric_files = {
-#     "losses_train.txt": losses['train'],
-#     "losses_val.txt": losses['val'],
-#     "dice_score_organ_train.txt": dice_scores_organ['train'],
-#     "dice_score_organ_val.txt": dice_scores_organ['val'],
-#     "dice_score_tumor_train.txt": dice_scores_tumor['train'],
-#     "dice_score_tumor_val.txt": dice_scores_tumor['val']
-# }
 
-# for filename, data in metric_files.items():
-#     with open(os.path.join(metrics_path, filename), "w") as output:
-#         for item in data:
-#             output.write("%f\n" % item)
-
-# 2. plots 디렉토리에 그래프 저장
-# plots_path = os.path.join(save_dir, "plots")
-# plt.savefig(os.path.join(plots_path, 'training_validation_metrics.png'))
-
-# # 3. predictions 디렉토리에 예측 결과 저장
-# predictions_path = os.path.join(save_dir, "predictions")
-
-# for i, data in enumerate(test_loader):
-#     # 입력, 타겟, 예측 결과 저장
-#     filenames = {
-#         'target': f'target_patch_4_{i}.npy',
-#         'image': f'image_patch_4_{i}.npy',
-#         'organ_prediction': f'organ_prediction_patch_4_{i}.npy',
-#         'tumor_prediction': f'tumor_prediction_patch_4_{i}.npy'
-#     }
-    
-#     numpy_arrays = {
-#         'target': target.numpy(),
-#         'image': img.numpy(),
-#         'organ_prediction': output_organ.numpy(),
-#         'tumor_prediction': output_tumor.numpy()
-#     }
-    
-#     for key, array in numpy_arrays.items():
-#         np.save(os.path.join(predictions_path, filenames[key]), array)
-
-# # 4. 시각화 결과 저장
-# plt.savefig(os.path.join(plots_path, 'predictions_organ_transformer_X.png'))
-# plt.savefig(os.path.join(plots_path, 'predictions_tumor_transformer_X.png'))
-
-print(f"Results saved in {save_dir}")
+print(f"Code Finished")
