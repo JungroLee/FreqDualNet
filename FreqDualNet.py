@@ -287,7 +287,7 @@ print('done')
 
 import sys
 import os
-from Freq_Net import *
+from Freq_Model import *
 
 
 
