@@ -20,7 +20,6 @@ import monai
 import os 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-# GPU 할당해주는 코드 교수님께서 알려주신거
 import datetime as dt
 save_dir = "./FreqDualNet"
 os.makedirs(save_dir, exist_ok=True)
