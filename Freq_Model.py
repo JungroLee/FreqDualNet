@@ -42,7 +42,7 @@ __all__ = [
     "BasicLayer",
     "SwinTransformer",
 ]
-# 채널별 스칼라값을 설정하여 중요도 분석하기
+# Analyze each channel's imporatance 
 class FrequencyChannelAttention(nn.Module):
     def __init__(self, channels, reduction=4):
         super().__init__()
@@ -57,7 +57,7 @@ class FrequencyChannelAttention(nn.Module):
         # x: (B, C, H, W, D)
         x = x.float()
         B, C, H, W, D = x.shape
-        fft = torch.fft.fftn(x, dim=(-3, -2, -1))               # FFT in spatial dims
+        fft = torch.fft.fftn(x, dim=(-3, -2, -1))               # FFT in spatial dimensions
         mag = torch.abs(fft)                                    # Magnitude spectrum
         freq_summary = torch.mean(mag, dim=(-3, -2, -1))        # (B, C)
         attn_weight = self.mlp(freq_summary)                    # (B, C)
@@ -474,20 +474,9 @@ class SwinUNETR(nn.Module):
         # mask = torch.where((target_channel < 0.3) | (target_channel > 10), 0.0, 1.0)
 
         logits_tumor = self.tumor_head(tumor_out)
-        # logits_organ: [B, 2, D, H, W]
-        # logits_tumor: [B, 2, D, H, W]
 
-        # 조건 1: organ background 채널 값이 0.7 ~ 1.3
-        # mask_pos = (logits_organ[:, 0,:,:,:] >= self.lower_thresh_bg) & (logits_organ[:, 0,:,:,:] <= self.upper_thresh_bg)
-        # mask_neg = (logits_organ[:, 1,:,:,:] <= self.upper_thresh_org)
-
-        # logits_tumor[:, 0,:,:,:][mask_pos] = 1.0
-        # logits_tumor[:, 1,:,:,:][mask_neg] = 0.0
-
-        # logits_tumor[:, 1] = logits_tumor[:, 1] * mask 
         print("logits_organ_shape:",logits_organ.shape)        
         logits = torch.cat([logits_organ, logits_tumor],dim=1)
-        # logits = self.out(out)
         print("logits_shape", logits.shape)
         return logits
 
