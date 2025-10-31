@@ -390,7 +390,7 @@ def train(epoch, train_loader):
     mean_epoch_loss = 0
     mean_dice_score_organ = 0
     mean_dice_score_tumor = 0
-    #print(dt.datetime.now(), "   epoch_iterator 전")
+    #print(dt.datetime.now(), "Before epoch_iterator ")
     epoch_iterator = tqdm(
         train_loader, desc="Training (X / X EPOCHS) (loss=X.X) (dice score=%.5f)", 
         dynamic_ncols=True)
