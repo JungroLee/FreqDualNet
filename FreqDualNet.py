@@ -17,7 +17,6 @@ import skimage
 import sklearn
 from sklearn import model_selection
 import monai
-# GPU 할당해주는 코드 교수님께서 알려주신거
 import os 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
