@@ -1,3 +1,10 @@
+## Reproducibility and Materials Availability
+
+All source codes and scripts for this study are available at this repository: https://github.com/JungroLee/FreqDualNet.  
+The repository includes the complete training, validation, and evaluation pipeline.  
+All code comments and variable names are written in English for transparency and reproducibility.
+
+
 # FreqDualNet
 This repository contains the implementation of the paper **"FreqDualNet: Frequency-Aware Vision Transformers for Tumor Segmentation"**.
 
