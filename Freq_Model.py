@@ -361,7 +361,7 @@ class SwinUNETR(nn.Module):
         fft_shifted = torch.fft.fftshift(fft_result, dim=(-3, -2, -1))  # shift zero freq to center
         magnitude = torch.abs(fft_shifted)  # magnitude spectrum
         return magnitude
-# 어느정도 거리 범위를 넘어가는 것만 통과하기
+        
     def high_pass_filter(self, x, radius_ratio=0.4):
         """
         x: Tensor of shape (B, C, H, W, D)
